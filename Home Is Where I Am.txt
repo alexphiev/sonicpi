@@ -1,0 +1,197 @@
+# Welcome to Sonic Pi v2.11
+
+rythm = 1 #1.25
+use_bpm 55
+synthMainMelody = :sine #:beep #subpulse   # :sine
+
+" FUNCTIONS -------------------------------------"
+
+define :play_minor do |note, ampl, sust|
+  play chord(note, :minor), sustain: sust, amp: ampl
+end
+
+define :play_major do |note, ampl, sust|
+  play chord(note, :major), sustain: sust, amp: ampl
+end
+
+define :play_melody do |note, ampl|
+  play note, amp: ampl, sustain: 0.50
+end
+
+define :play_energic_melody do |note, ampl|
+  play note, amp: ampl, sustain: 0.50
+end
+
+"___________________LIVE SETTINGS___________________"
+amplitudeMelody = 1
+ampSecondMelody = 0
+ampSecondMelodyMax = 1
+level = 0
+noteLevel = level
+
+"___________________LIVE MELODIES___________________"
+melodySimple = true
+melodyDouble = false
+melodyTriple = false
+secondaryMelody = false
+
+"___________________LIVE BEATS______________________"
+enableBass = false
+enableFastBeats = false
+enableClap = false
+enablePshit = false
+enableCymbal = false
+
+ringRythmMainMelody = (ring 1,0.70,0.30)
+ringRythmMainBeats = (ring 0.40,0.35,0.65,0.35,0.25)
+
+
+ringMainMelody1=(ring :F4,:A4+1,:A4,:F4-1,:A4+1,:A4,:F4,:A4+1,:A4,:F4-3,:F4-1,:F4)
+ringMainMelody2=(ring :F3,:A3+1,:A3,:F3-1,:A3+1,:A3,:F3+7,:A3+1,:A3,:F3-3,:F3-1,:F3)
+ringSecondaryMelody = (ring :A5, :A5, :A5, :C6)
+
+/ FUNCTIONS /
+define :play_minor do |note, ampl, sust|
+  play chord(note, :minor), sustain: sust, amp: ampl
+end
+define :play_major do |note, ampl, sust|
+  play chord(note, :major), sustain: sust, amp: ampl
+end
+define :play_melody do |note, ampl|
+  play note, amp: ampl, sustain: 0.50
+end
+define :play_energic_melody do |note, ampl|
+  play note, amp: ampl, sustain: 0.50
+end
+
+in_thread(name: :melody) do
+  
+  live_loop :find_notes_trial do
+    cue :cueMelody
+    use_synth synthMainMelody
+    if melodySimple == true then
+      24.times do
+        play_melody ringMainMelody1.tick(:tickMelody1), amplitudeMelody+0.2
+        play_melody ringMainMelody2.tick(:tickMelody2), amplitudeMelody-0.7
+        sleep rythm*ringRythmMainMelody.tick(:tickRythm)
+      end
+      "12.times do
+        play_melody ringMainMelody2.tick(:tickMelody), amplitudeMelody
+        sleep rythm*ringRythmMainMelody.tick(:tickRythm)
+      end"
+    else
+      sleep 16
+    end
+  end
+  
+  # Main melody one level higher
+  live_loop :melody_high do
+    if melodyDouble == true then
+      use_synth synthMainMelody
+      sync :cueMelody
+      12.times do
+        play_melody ringMainMelody1.tick(:tickMelody)+noteLevel, amplitudeMelody
+        sleep rythm*ringRythmMainMelody.tick(:tickRythm)
+      end
+      12.times do
+        play_melody ringMainMelody2.tick(:tickMelody)+noteLevel, amplitudeMelody
+        sleep rythm*ringRythmMainMelody.tick(:tickRythm)
+      end
+    else
+      sleep 16
+    end
+  end
+  
+  # Main melody two levels higher
+  live_loop :melody_high_2 do
+    use_synth synthMainMelody
+    sync :cueMelody
+    if melodyTriple == true then
+      12.times do
+        play_melody ringMainMelody1.tick(:tickMelody)+12+noteLevel, amplitudeMelody
+        sleep rythm*ringRythmMainMelody.tick(:tickRythm)
+      end
+      12.times do
+        play_melody ringMainMelody2.tick(:tickMelody)+12+noteLevel, amplitudeMelody
+        sleep rythm*ringRythmMainMelody.tick(:tickRythm)
+      end
+    else
+      sleep 16
+    end
+  end
+  
+  live_loop :secondary_melody do
+    sync :cueMelody
+    if secondaryMelody == true then
+      128.times do
+        use_synth :beep
+        if ampSecondMelody<ampSecondMelodyMax then
+          ampSecondMelody = ampSecondMelody + 0.01
+        end
+        play ringSecondaryMelody.tick, release:0.2, attack:0.01, amp: ampSecondMelody
+        sleep 0.125
+      end
+    else
+      sleep 16
+    end
+  end
+end
+
+
+
+
+in_thread(name: :beats) do
+  
+  sync :cueMelody
+  
+  live_loop :bass_loop do
+    if enableBass == true then
+      sample :drum_bass_soft, amp:2
+    end
+    sleep rythm*ringRythmMainBeats.tick(:tickMainBeats)
+  end
+  
+  live_loop :clap do
+    if enableClap == true then
+      sleep 1
+      sample :drum_snare_hard
+      sample :drum_cymbal_pedal
+      sample :drum_cymbal_closed
+      sleep 1
+    else
+      sleep 2
+    end
+  end
+  
+  live_loop :fastBeats do
+    if enableFastBeats == true then
+      sleep 0.25
+      sample :drum_cymbal_pedal
+      sleep 0.25
+      sample :drum_cymbal_pedal
+      sleep 0.25
+      sample :drum_cymbal_pedal
+      sleep 0.25
+    else
+      sleep 1
+    end
+  end
+  
+  live_loop :pshit do
+    if enablePshit == true then
+      with_fx :rbpf do
+        use_synth :noise
+        play :C, release:1, amp:1, attack_level:2
+      end
+    end
+    sleep 2
+  end
+  
+  live_loop :cymbal do
+    if enableCymbal == true then
+      sample :drum_bass_hard
+      sample :drum_cymbal_hard
+    end
+    sleep 16
+  end
+end
